@@ -328,49 +328,6 @@ void calculo_payoff ( double *payoff, double r, double gama, double delta, int x
 
 	#endif
 	
-	/*
-	
-	//recompensa
-	payoff[COOPERATOR] = (1./G)*r*c* (np+nc) - c + delta*np;
-	payoff[PUNISHER]   = (1./G)*r*c* (np+nc) - c - gama*nc;
-	payoff[DEFECTOR]   = (1./G)*r*c* (np+nc);
-	
-
-	//corrupçao com propina
-	double pool = (r/topologia[x])*(nc+np);
-
-	payoff[COOPERATOR] = pool - investimento[x] - (r/topologia[x])*gama*np + delta*gama*np/nc;
-	payoff[DEFECTOR]   = pool - investimento[x] - (r/topologia[x])*gama*np;
-	
-	if(nc==0)
-	{
-	payoff[PUNISHER]   = pool - investimento[x] - (r/topologia[x])*gama*np + (1)*gama;
-	}
-	else
-	{
-	payoff[PUNISHER]   = pool - investimento[x] - (r/topologia[x])*gama*np + (1-delta)*gama;
-	}	
-	
-	//puniçao c/ propina
-	double q = gsl_rng_uniform(rand_vec);
-	double p = gsl_rng_uniform(rand_vec);
-
-	payoff[COOPERATOR] = (1./G)*r*c* (np+nc) - c; //C
-	payoff[PUNISHER]   = (1./G)*r*c* (np+nc) - c + p*q*delta*nd - (1 - p*q)*gama*nd; //P
-	payoff[DEFECTOR]   = (1./G)*r*c* (np+nc) - (1 - p*q)*gama*np - p*q*delta*np; //D	
-	
-	//Ising
-	payoff[COOPERATOR] = 2*1*(nc-nd + 0.0); 
-	payoff[DEFECTOR]   = 2*(-1)*(nc-nd + 0.0); //W = exp(-payoff/T)
-
-	//puniçao 
-	double pool = (r/topologia[x])*investimento_total;
-
-	payoff[COOPERATOR] = pool - investimento[x];
-	payoff[PUNISHER]   = pool - investimento[x] - gama*nd;
-	payoff[DEFECTOR]   = pool - investimento[x] - delta*np;
-
-	*/
 
 	return;	
 }
