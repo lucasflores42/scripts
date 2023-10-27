@@ -1,0 +1,87 @@
+
+
+Funcoes da ezgfx:
+
+
+int ezOpenWin(int Width, int Height, char *wname);
+  Estabelece a conexao com o servidor X e abre uma janela de Width pixels de
+  largura e Height pixels de altura, sem contar as bordas, com o titulo dado
+  por wname. A janela sera centralizada na tela, tera' tamanho fixo,
+  BackingStore (refresh automatico) e 16 cores predefinadas alocadas. wname
+  tambem especifica o nome do icone para o programa quando iconificado. 
+  A funcao retorna 0 em caso de falha (por exemplo se nao puder estabelecer a 
+  conexao com o servidor X) ou um valor diferente de zero em caso de sucesso.
+
+void ezPlot(int x, int y, int c);
+  Plota um ponto nas coordenadas dadas por x e y, na cor c . 0,0 e' o canto
+  superior esquerdo da janela. O codigo da cor e' um inteiro de 0 a 15.
+  0 e' preto, 1 branco, etc. (ver demo.c).
+
+void ezLine(int x1, int y1, int x2, int y2, int c);
+  Traca uma linha da posicao x1,y1 ate x2,y2 , na cor c.
+
+void ezCls(void);
+  Limpa a janela.
+
+void ezBox(int x1, int y1, int x2, int y2, int c);
+  Desenha um retangulo cujo canto superior esquerdo e' x1,y1 e o inferior
+  direito x2,y2 , na cor c.
+
+void ezBoxF(int x1, int y1, int x2, int y2, int c);
+  Semelhante a ezBoxF, mas desenha um retangulo preenchido.
+
+void ezEllipse(int x, int y, int rx, int ry, int c);
+  Traca uma elipse com centro em x,y raio horizontal rx, raio vertical ry, na
+  cor c.
+
+void ezEllipseF(int x, int y, int rx, int ry, int c);
+  Semelhante a elipse, mas desenha uma elipse preenchida. 
+
+void ezCopyArea(int x1, int y1, int x2, int y2, int destx, int desty);
+  Copia o grafico presente na janela dentro do retangulo especificado
+  por x1,y1 e x2,y2 para a posicao destx, desty);
+
+void ezText(int x, int y, int c, char *text);
+  Escreve na janela, a partir da posicao x,y e na cor c a string dada por text.
+
+void ezFlush(void);
+  Descarrega o buffer de comandos enviados ao terminal x, fazendo com que todas
+  as funcoes enviadas sejam executadas/desenhadas. O terminal X mantem um 
+  buffer para aumentar a eficiencia nas conexoes via rede, etc. Raramente e'
+  necessario usar ezFlush(), pois determinados eventos, como o recebimento
+  de certo numero de comandos ou a leitura do mouse/teclado causam um flush
+  automatico. Em geral se usa no final das rotinas graficas.
+
+int ezCheckKey(void);
+  Verifica se alguma tecla foi pressionada, em caso afirmativo retorna o codigo
+  ASCII da mesma e a retira do buffer. Em caso negativo retorna 0.
+
+void ezClearKeyBuf(void);
+  Esvazia o buffer de eventos do terminal X relativo ao teclado, retirando
+  possiveis codigos que estejam la'.
+
+int ezCheckMouse(void);
+  Verifica se algum botao do mouse foi pressionado ou liberado. Quando um
+  botao for pressionado retorna o codigo do botao (1-esquerdo, 2-meio,
+  3-direito). Quando for liberado retorna o mesmo codigo, mas negativo. Retorna
+  0 se nenhum evento ocorreu. Atualiza as variaveis globais ezMouseX e ezMouseY
+  para indicar a posicao atual do mouse, mas apenas enquanto algum botao
+  estiver pressionado.
+
+void ezClearMouseBuf(void);
+  Esvazia o buffer de eventos do terminal X, relativo a eventos do mouse.
+
+void ezChangeWindowTitle(char *wname);
+  Muda o titulo da janela, sem no entanto mudar o nome do icone.
+
+void ezErrorMsg(void);
+  Imprime para stderr uma mensagem de erro para o caso de ezOpenWin() ter
+  falhado (e retornado 0).
+
+void ezClose(void);
+  Fecha a janela e encerra a conexao com o terminal X.
+
+
+
+De uma olhada em demo.c para maiores detalhes.
+

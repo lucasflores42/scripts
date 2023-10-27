@@ -1,0 +1,414 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
+
+#include <time.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
+
+
+#define A 100 // tamanho da população = A*A
+#define N_viz 4
+#define EPSILON (1e-8)
+#define GNUPLOT    //se GNUPLOT estiver definido matrizes serao plotadas
+//#define densidade	
+#define repeticoes 10
+const int tmax=100000;
+ //long int state [A*A]; // estado do sitio, 0 = ordinary, 1 = criminal e 2 = punisher  %ld
+// long int viz [A*A][4]; // matriz de vizinhos [sitio] [posição_do_vizinho]
+
+
+unsigned long rseed;
+const gsl_rng_type * T;
+gsl_rng * rand_vec;
+
+double measure_time = 1;
+
+
+void set_gsl_rng(void)
+{
+#ifdef DEBUG
+	rseed=0;
+#else
+	rseed=time(NULL);
+#endif
+  
+	gsl_rng_env_setup();
+	T    = gsl_rng_default;
+	rand_vec = gsl_rng_alloc (T);
+	gsl_rng_set (rand_vec, rseed);
+
+  return;
+}
+
+
+void f (double *payoff,int state[1], int viz[1][5], int sitio,double r, double gama )
+{
+
+	//double r=3.;
+	double c=1;
+	int i=0;//,j=0;
+
+	double nc = 0;
+	double no = 0;
+	double np = 0;
+
+
+	//printf("%lf %lf %lf\n",no,nc,np);
+	for(i=0;i<5;i++) 
+	{
+		if(state[viz[sitio][i]]==0) 
+		{
+		 	nc = nc+1; // no sitio x		
+	  	}
+		if(state[viz[sitio][i]]==2) 
+		{
+		 	np = np+1; 	
+	  	}
+		if(state[viz[sitio][i]]==1) 
+		{
+		 	no = no+1; 	
+	  	}
+	}
+	/*//grupo de 2 (n: numero de vizinhos)
+	payoff[1] = (1./(2))*r*c* (np+no) + 4*((r/2.) -c);
+	payoff[2] = (1./(2))*r*c* (np+no) + 4*((r/2.) -c) - gama*nc;
+	payoff[0] = (1./(2))*r*c* (np+no) - gama*np;*/
+
+
+	
+	//grupo de 5 (n: numero total)
+	payoff[1] = (1./(N_viz+1))*r*c* (np+no) - c;
+	payoff[2] = (1./(N_viz+1))*r*c* (np+no) - c - gama*nc;
+	payoff[0] = (1./(N_viz+1))*r*c* (np+no) - gama*np;
+
+	/*//grupo de 5 (n: numero de vizinhos)
+	payoff[1] = (1./(N_viz+1)) *r*c* (np+no) + r*c/5. -c;
+	payoff[2] = (1./(N_viz+1)) *r*c* (np+no) - c - gama*nc;
+	payoff[0] = (1./(N_viz+1)) *r*c* (np+no) - gama*np;*/
+
+	
+}
+
+
+
+int main(int argc, char *argv[])
+{
+	//gera arquivo
+	char filename[200];
+	FILE *fp;
+	//double M; // prob mobilidade
+	double gama;
+	double r;
+        unsigned long int seed = time(NULL); 
+        srand((unsigned)seed);
+   
+	if (argc!=3)
+		{
+			printf("O programa precisa de 1 argumento: mobilidade\n");
+			exit(1);
+		}
+	r=atof(argv[1]);
+	gama=atof(argv[2]);
+
+	set_gsl_rng();
+	
+	//printf("%s %s  %f\n\n",argv[0],argv[1],M);
+	
+	sprintf(filename,"dados_r%f_g%f_seed%ld.txt",r,gama,seed);
+	fp=fopen(filename,"w");
+		
+//------------------ VARIÁVEIS ---------------------------
+	//printf("%f %f\n",r,gama);
+	
+	//int i, j,t, h, k,z,p,x,x1,R,x2,yc,xc,y,e,Z;
+	int i,j,k,t,p,x,y,R,e;
+	int state [A*A];
+	int viz [A*A][5];
+	int NO; // numero de ordinarys
+	int NC; // numero de criminals
+	int NP; // numero de punhishers
+	int vizinho,vizinho1;//,vizinho2;
+	//int maior = 0; 
+	//int igual = 0; 
+	//int menor = 0; 
+
+	//int flag = 0; // contador para printar estados intermediários
+
+	double l;//,v,max; // r: multiplica as contribuiçoes, c: contribuiçao
+	double payoff[3]; // matriz 3x3, pois há 3 estratégias
+	double Px,Py;//,Pz; // payoff do sitio i / vizinho do sitio i
+	//double Wxy; // probabilidade do sitio i assumir o estado de seu vizinho
+
+  	double ruido = 0.1;
+  
+
+
+//----------------------- PREENCHIMENTO DA REDE (AQUI REDE QUADRADA) -------------------------------------------------------------------
+
+	for(i=0; i < A; i++)
+	{
+		for(j=0; j < A; j++)
+		{
+			viz[j+i*A][0] = j + i * A; // autointeraçao
+			viz[j+i*A][1] = j + i * A - A; //vizinho acima de i
+			viz[j+i*A][2] = j + i * A + 1; //vizinho à direita de i
+			viz[j+i*A][3] = j + i * A + A; //vizinho abaixo sito de i
+			viz[j+i*A][4] = j + i * A - 1; //vizinho à esquerda i
+
+			if (i == 0) viz[j+i*A][1] = j + A * A - A ; //ajuste do vizinho de cima dos elementos da fronteira superior
+			if (j == 0) viz[j+i*A][4] = i * A + A - 1; //ajuste do vizinho Ã  esquerda dos elementos da fronteira esquerda
+			if (i == A-1) viz[j+i*A][3] = j; //ajuste do vizinho abaixo dos elementos da fronteira inferior
+			if (j == A-1) viz[j+i*A][2] = i * A ; //ajuste do vizinho Ã  direita dos elementos da fronteira direita
+		}
+
+	}
+
+
+
+
+//----------- "SORTEIO" DOS ESTADOS DOS SITIOS (ORDIN, CRIM, PUNISH) -------------------
+
+for(R=0;R<repeticoes;R++)
+{
+measure_time = 1;
+
+	for(i=0; i < A; i++)
+	{
+		for(j=0; j < A; j++)
+		{	
+			/*if( (float)rand()/RAND_MAX <= 0.5){ state[j+i*A] = 0;}
+			else if( (float)rand()/RAND_MAX <= 0.75){state[j+i*A] = 1;}
+			else{state[j+i*A] = 2;}*/
+
+			//aleatorio
+			/*double temp = gsl_rng_uniform(rand_vec);
+			if( temp < 0.5) 
+				state[j+i*A] = 0;
+			else 
+			{
+				if( temp < 0.75)
+					state[j+i*A] = 1;
+				else state[j+i*A] = 2;
+			}*/	
+
+		//quadrados
+		int a=18,b=33,c=68,d=83;
+		state[j+i*A] = 0;
+		if(i>=a && i<b && j>=a && j<b){state[j+i*A] = 2;}	
+		if(i>=c && i<d && j>=c && j<d){state[j+i*A] = 1;}
+		if(i>=c && i<d && j>=a && j<b)
+		{
+			double temp = gsl_rng_uniform(rand_vec);
+			if(temp < 0.5) {state[j+i*A] = 2;}
+			else{state[j+i*A] = 1;}
+		}
+		if(i>=a && i<b && j>=c && j<d)
+		{
+			state[j+i*A] = 2; 
+			if(i==a){state[j+i*A] = 1;}
+			if(i==b-1){state[j+i*A] = 1;}
+			if(j==c){state[j+i*A] = 1;}
+			if(j==d-1){state[j+i*A] = 1;}
+		}
+
+		//listras
+		/*if(i<A/3){state[j+i*A] = 0;}
+		if(i>=A/3 && i<2*A/3){state[j+i*A] = 2;}	
+		if(i>=2*A/3){state[j+i*A] = 1;}/*
+
+		if(i==A/3){state[j+i*A] = 1;}
+		if(i==2*A/3){state[j+i*A] = 1;}
+
+		if(j==0){state[j+i*A] = 1;}
+
+		if(j==2*A/3){state[j+i*A] = 1;}
+		if(j>2*A/3){state[j+i*A] = 0;}	
+
+		if(i<A/3){state[j+i*A] = 0;}	
+		if(i>2*A/3){state[j+i*A] = 0;}	*/
+		}
+	}	
+	NO = 0.0;
+	NC = 0.0;
+	NP = 0.0;
+	for(k=0;k<A*A;k++)
+		{
+			if(state[k] == 1){NO=NO+1;}
+			if(state[k] == 2){NP=NP+1;}
+			if(state[k] == 0){NC=NC+1;}
+		}	
+	fprintf(fp,"%f %lf %lf %lf\n", 0.01, (double)NO/(A*A), (double)NC/(A*A), (double)NP/(A*A));
+	
+//--------------------------------------visualizaçao states iniciais----------
+#ifdef GNUPLOT
+
+	
+	//printf("set autoscale xfix\n");
+	printf("set autoscale keepfix\n");
+	printf("set palette model RGB\n");
+	printf("unset colorbox\n");
+	printf("set palette defined ( 0 \"light-red\", 1 \"light-green\",  2 \"dark-blue\")\n");
+	printf("set cbrange[0:2]\n");
+	//printf("set title \'gama=0.75 , R=0.4\'\n");
+	printf("set xrange[0:%d]\n",A);
+	printf("set yrange[0:%d]\n",A);
+	printf("set size square\n");
+	printf("plot \"-\" matrix with image\n");
+
+	for(j=0;j<A;j++)
+	{
+	for(i=0;i<A;i++)
+	{
+	printf("%d ",state[j+i*A]);
+	}
+	printf("\n");
+	}
+	printf("\n"); printf("e\n");    printf("pause(5.5)\n");
+
+	//    ./a.out | gnuplot
+	
+#endif
+
+
+
+// MCS
+for(t=1; t < tmax; t++)
+{	
+		
+  	if(NO/(A*A)==1 || NP/(A*A)==1 || NC/(A*A)==1 || (NO+NP)/(A*A)==1)
+    	{
+
+		break;
+     	}
+			
+	NO = 0.0;
+	NC = 0.0;
+	NP = 0.0;
+
+	//print densidades
+	if ( t >= measure_time)
+	{
+		for(k=0;k<A*A;k++)
+		{
+			if(state[k] == 1){NO=NO+1;}
+			if(state[k] == 2){NP=NP+1;}
+			if(state[k] == 0){NC=NC+1;}
+
+		
+		}	
+	
+		#ifdef densidade
+		//densidades por passo
+		//printf("%d %lf %lf %lf\n", t, (double)NO/(A*A), (double)NC/(A*A), (double)NP/(A*A));
+		
+		fprintf(fp,"%d %lf %lf %lf\n", t, (double)NO/(A*A), (double)NC/(A*A), (double)NP/(A*A));
+		
+		#endif
+		measure_time *= 1.1;
+		if (floor(measure_time)-t < EPSILON) measure_time=ceil(measure_time);
+	}
+	//interaçao individual
+	for(p=0;p<A*A;p++)
+	{					
+		Px = 0;
+		Py = 0;
+		/*
+		x = rand()%(A*A);	
+		y = rand()%(N_viz) + 1; // vizinho do i
+		*/
+		x = (int) A*A*gsl_rng_uniform(rand_vec);
+		y = 1 + (int) 4*gsl_rng_uniform(rand_vec);
+		
+		vizinho = viz[x][y];
+		
+     		vizinho1=x;
+
+		//for(y=0;y<5;y++)
+		//{
+		//vizinho1 = viz[x][y];
+		f(payoff,state,viz,vizinho1,r,gama);
+		Px = payoff[state[x]];
+		//}
+
+		//for(y=0;y<5;y++)
+		//{		
+		//vizinho2 = viz[vizinho][y];
+		f(payoff,state,viz,vizinho,r,gama);
+		Py = payoff[state[vizinho]];
+		//}
+		//f(payoff,state,viz,vizinho,r,gama);
+
+		//Px += payoff[state[x]];
+		//Py += payoff[state[vizinho]];
+
+	double Wxy =1/( 1+exp(-(Py-Px)/ruido));
+			//if(state[x]==2){printf("%lf\n",Px);}		
+
+			l = gsl_rng_uniform(rand_vec);
+			//drand48();
+			//if((state[x]+state[vizinho])==3){Wxy=0.;}
+
+			//troca de estado
+			if(Wxy > l)
+			{      	//e = state[x]; 
+				state[x] = state[vizinho];	
+				//state[viz[x][y]] = e;			
+			}
+			//if(Py>Px){state[x] = state[vizinho];}
+
+		//mob aleatoria com 50% prob
+		/*double g = gsl_rng_uniform(rand_vec);
+		if(g<=0.1)
+		{		
+			y = 1 + (int) 4*gsl_rng_uniform(rand_vec);
+			e=state[x];
+			state[x]=state[viz[x][y]];
+			state[viz[x][y]]=e;
+		}*/
+		//}		
+	}
+	
+	
+//--------------------------visualizaçao troca de states intermediários ----------
+
+
+#ifdef GNUPLOT
+	//printf("set size square\n");
+    //	printf("set title \' MCS=%d \' \n", t);
+    	printf("plot \"-\" matrix with image\n");
+
+	//printf("set left key \'%d\'\n",t);
+
+	for(j=0;j<A;j++)
+	{
+	for(i=0;i<A;i++)
+	{
+	// imprimo todos os elementos de uma linha
+	printf("%d ",state[j+i*A]);
+	}
+	// e so depois dou enter
+	printf("\n");
+	}
+	printf("\n"); printf("e\n");    printf("pause(2.1)\n");
+
+	//    ./a.out | gnuplot
+#endif	
+
+
+
+	//printf("t=%d maior=%d igual=%d menor=%d\n", t, maior, igual, menor);
+//-----------------------------------------------------------------------------
+}
+} 
+
+
+	
+
+
+fclose(fp);
+
+return 0;
+
+}

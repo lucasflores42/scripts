@@ -1,0 +1,65 @@
+linux no windows:
+
+	https://learn.microsoft.com/pt-br/windows/wsl/install
+	abrir cmd como admin e botar: wsl --install
+
+remove arquivos com nome tal
+
+
+	find . -name "*.pdf" -print0 | xargs -0 rm
+	
+	
+	ls -l -S -r -h  (-l: mostra tamanho, 
+			 -S: mostra por tamanho decrescente, 
+			 -r: inverte para crescente,
+			 -h: mostra unidade do numero)
+			 
+	sort -V 
+	sort -k2,2 -k1,1 data.txt -o data.txt: segunda coluna e primeira coluna
+	
+	
+ver tamanho do diretório 
+
+	du -sh /home/lucasflores
+	
+	
+remove arquivos com tamanho zero
+
+
+	find . -size 0 -delete
+	
+fit
+
+	gnuplot> g(x) = c + d*x + e*x*x
+	gnuplot> fit g(x) 'electron.dat' using 1:2 via c,d, e
+	
+	
+VPN ufrgs
+
+
+	sudo openvpn --config /home/lucas/Downloads/VPN-UFRGS.ovpn
+
+
+linux pacotes
+
+
+	sudo apt-get update
+	sudo apt install jed
+	sudo apt install gnuplot-qt
+	sudo apt-get install libgsl-dev
+	sudo apt install gcc
+	sudo apt  install gedit
+
+
+configurar diretorio inicial do terminal: 
+
+	abrir .bashrc e adicionar cd ~/pasta no fim do arquivo
+	
+	
+	
+	
+	
+	
+	
+	
+	
